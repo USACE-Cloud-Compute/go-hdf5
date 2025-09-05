@@ -59,6 +59,11 @@ func (i Identifier) ID() int64 {
 	return int64(i.id)
 }
 
+// HID returns the C hid_t value of an identifier.
+func (i Identifier) HID() C.hid_t {
+	return i.id
+}
+
 // Name returns the full name of the Identifier
 func (i Identifier) Name() string {
 	sz := int(C.H5Iget_name(i.id, nil, 0)) + 1
