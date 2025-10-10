@@ -261,7 +261,6 @@ var (
 	T_GO_STRING *Datatype = makeGoStringDatatype()
 )
 
-//
 var h5t_VARIABLE = int(C.size_t_H5T_VARIABLE())
 
 func makeGoStringDatatype() *Datatype {
@@ -270,6 +269,19 @@ func makeGoStringDatatype() *Datatype {
 		panic(err)
 	}
 	err = dt.SetSize(h5t_VARIABLE)
+	if err != nil {
+		panic(err)
+	}
+	dt.goPtrPathLen = 1 // This is the first field of the string header.
+	return dt
+}
+
+func FixedGoStringDatatype(size int) *Datatype {
+	dt, err := T_C_S1.Copy()
+	if err != nil {
+		panic(err)
+	}
+	err = dt.SetSize(size)
 	if err != nil {
 		panic(err)
 	}
