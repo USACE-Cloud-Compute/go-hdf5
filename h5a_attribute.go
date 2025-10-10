@@ -12,6 +12,7 @@ import "C"
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -127,6 +128,30 @@ func (s *Attribute) Read(data interface{}, dtype *Datatype) error {
 	return err
 }
 
+func (s *Attribute) ReadFixedStringArray() ([][]string, error) {
+	//////////
+	at := s.GetType()
+	dt := NewDatatype(at.HID())
+	defer dt.Close()
+	strSize := dt.Size()
+
+	attrSpace := s.Space()
+	defer attrSpace.Close()
+
+	dims, maxdims, err := attrSpace.SimpleExtentDims()
+	fmt.Println(maxdims)
+	if err != nil {
+		return nil, err
+	}
+	rows, cols := int(dims[0]), int(dims[1])
+
+	readStr := ""
+	if err := s.Read(&readStr, dt); err != nil {
+		return nil, err
+	}
+	return parseStringBufferToMatrix(readStr, int(strSize), rows, cols), nil
+}
+
 // Write writes raw data from a buffer to an attribute.
 func (s *Attribute) Write(data interface{}, dtype *Datatype) error {
 	var addr unsafe.Pointer
@@ -151,4 +176,17 @@ func (s *Attribute) Write(data interface{}, dtype *Datatype) error {
 	rc := C.H5Awrite(s.id, dtype.id, addr)
 	err := h5err(rc)
 	return err
+}
+
+func parseStringBufferToMatrix(buffer string, stringlen int, rows int, cols int) [][]string {
+	matrix := make([][]string, rows)
+	for i := 0; i < rows; i++ {
+		matrixrow := make([]string, cols)
+		for j := 0; j < cols; j++ {
+			position := (i*2 + j) * stringlen
+			matrixrow[j] = strings.TrimSpace(buffer[position : position+stringlen])
+		}
+		matrix[i] = matrixrow
+	}
+	return matrix
 }
